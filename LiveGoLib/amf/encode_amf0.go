@@ -85,7 +85,7 @@ func Encode_Object(input Object) []byte {
 	var end = make([]byte, 3)
 	end[0] = byte(0)
 	end[1] = byte(0)
-	end = append(end, Encode_ObjectEnd()...)
+	end[2] = byte(9)
 	b = append(b, end...)
 	return b
 }

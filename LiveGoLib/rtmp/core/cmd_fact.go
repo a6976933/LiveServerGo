@@ -314,21 +314,20 @@ func (cnt *ConnectAMF0) Handle(clientInfo *ClientInfo) {
 	var cmdContext CommandContext
 	var windowSent *WindowAcknowledgementSize
 	var setPeer *SetPeerBandwidth
-	var streamBegin *StreamBegin
+	//var streamBegin *StreamBegin
 	var conResp *ConnectRespAMF0
 	var setChunkSize *SetChunkSize
 	cmdContext.wCmdType = windowSent
 	cmdContext.wCmdType.Write(clientInfo)
 	cmdContext.wCmdType = setPeer
 	cmdContext.wCmdType.Write(clientInfo)
-	cmdContext.wCmdType = streamBegin
-	cmdContext.wCmdType.Write(clientInfo)
-	clientInfo.chunksize = 1024
+	clientInfo.chunksize = 4096
 	cmdContext.wCmdType = setChunkSize
 	cmdContext.wCmdType.Write(clientInfo)
-	ParseBasicHeader(clientInfo)
-	ParseMessageHeader(clientInfo)
-	CmdFactory(clientInfo)
+	//cmdContext.wCmdType = streamBegin
+	//cmdContext.wCmdType.Write(clientInfo)
+	//bufio.NewReader(os.Stdin).ReadBytes('\n')clientInfo.chunksize = 1024
+
 	cmdContext.wCmdType = conResp
 	cmdContext.wCmdType.Write(clientInfo)
 }
@@ -484,7 +483,7 @@ func (cra *ConnectRespAMF0) Write(clientInfo *ClientInfo) {
 	respEvent["level"] = "status"
 	respEvent["code"] = "NetConnection.Connect.Success"
 	respEvent["description"] = "Connection succeeded."
-	respEvent["objectEncoding"] = 0
+	respEvent["objectEncoding"] = float64(0)
 	var conRespAMF0 []byte
 	conRespAMF0 = amf.Encode_AMF0("_result")
 	conRespAMF0 = append(conRespAMF0, amf.Encode_AMF0(float64(clientInfo.transactionID))...)

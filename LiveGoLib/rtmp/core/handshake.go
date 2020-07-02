@@ -41,9 +41,10 @@ func HandShakeClientPkg(clientConn ClientConn) {
 	copy(S1[4:8], []byte{0x00, 0x00, 0x00, 0x00})
 	makeRandBytes(S1)
 	clientConn.GetNetConn().Write(S1)
-	copy(S2[0:4], C1[0:4])
+	copy(S2, C1)
+	/*copy(S2[0:4], C1[0:4])
 	copy(S2[4:8], S1[0:4])
-	makeRandBytes(S2)
+	copy(S2, C1[8:])*/
 	clientConn.GetNetConn().Write(S2)
 	io.ReadFull(clientConn.GetNetConn(), C2)
 	fmt.Printf("Handshake Finished")

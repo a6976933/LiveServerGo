@@ -12,7 +12,6 @@ type Object map[string]interface{}
 
 func Decode_AMF0(Buff []byte) (interface{}, []byte) {
 	var ret interface{}
-	fmt.Println(Buff[0])
 	switch uint(Buff[0]) {
 	case 0:
 		ret, Buff = Decode_Number(Buff, true)
