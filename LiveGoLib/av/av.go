@@ -76,15 +76,19 @@ const ( //AVC Decoder Configuration Record
 )
 
 func Trans4Byte2UINT32(b []byte) uint32 {
-	return uint32(b[0])*16777216 + uint32(b[1])*65536 + uint32(b[2])*256 + uint32(b[3])
+	return uint32(b[0])<<24 + uint32(b[1])<<16 + uint32(b[2])<<8 + uint32(b[3])
+}
+
+func TransInverse4Byte2UINT32(b []byte) uint32 {
+	return uint32(b[0])+uint32(b[1])<<8 + uint32(b[2])<<16 +uint32(b[3])<<24
 }
 
 func Trans3Byte2UINT32(b []byte) uint32 {
-	return uint32(b[0])*65536 + uint32(b[1])*256 + uint32(b[2])
+	return uint32(b[0])<<16 + uint32(b[1])<<8 + uint32(b[2])
 }
 
 func Trans2Byte2UINT16(b []byte) uint16 {
-	return uint16(b[0])*256 + uint16(b[1])
+	return uint16(b[0])<<8 + uint16(b[1])
 }
 
 func Trans1Byte2UINT8(b []byte) uint8 {
@@ -93,24 +97,24 @@ func Trans1Byte2UINT8(b []byte) uint8 {
 
 func TransUINT32_2_4Byte(i uint32) []byte {
 	var b = make([]byte, 4)
-	b[0] = uint8(i >> 24)
-	b[1] = uint8((i >> 16) & 255)
-	b[1] = uint8((i >> 8) & 255)
-	b[2] = uint8(i & 255)
+	b[0] = byte(uint8(i >> 24))
+	b[1] = byte(uint8((i >> 16) & 0xff))
+	b[1] = byte(uint8((i >> 8) & 0xff))
+	b[2] = byte(uint8(i & 0xff))
 	return b
 }
 
 func TransUINT32_2_3Byte(i uint32) []byte {
 	var b = make([]byte, 3)
-	b[0] = uint8(i >> 16)
-	b[1] = uint8((i >> 8) & 255)
-	b[2] = uint8(i & 255)
+	b[0] = byte(uint8(i >> 16))
+	b[1] = byte(uint8((i >> 8) & 0xff))
+	b[2] = byte(uint8(i & 0xff))
 	return b
 }
 
 func TransUINT8_2_1Byte(i uint8) []byte {
 	var b = make([]byte, 1)
-	b[0] = uint8(i)
+	b[0] = byte(uint8(i))
 	return b
 }
 

@@ -64,6 +64,7 @@ func Decode_String(Buff []byte, clear1byte bool) (string, []byte) {
 		Buff = av.ShiftBytesRight(Buff, 1)
 	}
 	length := av.Trans2Byte2UINT16(Buff[:2])
+	//fmt.Println(Buff)
 	return string(Buff[2 : length+2]), av.ShiftBytesRight(Buff, uint(length+2))
 }
 
@@ -81,6 +82,7 @@ func Decode_Object(Buff []byte, clear1byte bool) (av.Object, []byte) {
 				break
 			}
 		}
+		fmt.Println(key)
 		val, Buf := Decode_AMF0(Buf)
 		obj[key] = val
 		Buff = Buf

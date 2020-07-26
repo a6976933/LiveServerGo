@@ -1,8 +1,8 @@
 package proxy
 
 type MiddleBuf interface {
-	SetSendBytes(buf []byte)
-	GetSendBytes() []byte
+	SetSendInfo(buf []byte,tagtype int,msgLen uint32,time uint32,id uint32)
+	GetSendInfo() ([]byte, int,uint32, uint32, uint32)
 }
 
 type FLVGetter struct {
@@ -18,14 +18,22 @@ type ProxyPush struct {
 	fg *FLVGetter
 }
 
+type SendInfo struct {
+	buf []byte
+	tagtype int
+	msgLen uint32
+	time uint32
+	streamID uint32
+}
+
 type Queue struct {
-	buf  [][]byte
+	buf  []SendInfo
 	cap  uint
 	head uint
 	tail uint
 }
 
-func (q *Queue) Enqueue(buff []byte) {
+func (q *Queue) Enqueue(buff SendInfo) {
 	q.tail = (q.tail + 1) % q.cap
 	if q.head == q.tail {
 		q.buf[q.head] = buff
@@ -35,7 +43,7 @@ func (q *Queue) Enqueue(buff []byte) {
 	}
 }
 
-func (q *Queue) Peek() []byte {
+func (q *Queue) Peek() SendInfo {
 	return q.buf[q.head]
 }
 
@@ -65,7 +73,7 @@ func NewQueue() *Queue {
 func (q *Queue) SetCap(cp uint) {
 	q.cap = cp
 	for i := 0; i < int(cp); i++ {
-		q.buf = make([][]byte, 10)
+		q.buf = make([]SendInfo, 10)
 	}
 }
 
@@ -73,15 +81,21 @@ func (fg *FLVGetter) GetSendBytes(buf []byte) []byte {
 	return buf
 }
 
-func (rs *RTMPSender) SetSendBytes(buf []byte) {
-	rs.ChunkQueue.Enqueue(buf)
+func (rs *RTMPSender) SetSendInfo(ob SendInfo) {
+	rs.ChunkQueue.Enqueue(ob)
 }
 
-func (prox *ProxyPush) SetSendBytes(buf []byte) {
-	prox.rs.SetSendBytes(buf)
+func (prox *ProxyPush) SetSendInfo(buf []byte,tagtype int,msgLen uint32,time uint32,streamID uint32) {
+	var ob SendInfo
+	ob.buf = buf
+	ob.tagtype = tagtype
+	ob.msgLen = msgLen
+	ob.time = time
+	ob.streamID = streamID
+	prox.rs.SetSendInfo(ob)
 }
 
-func (prox *ProxyPush) GetSendBytes() []byte {
+func (prox *ProxyPush) GetSendInfo() ([]byte,int,uint32,uint32,uint32) {
 	buf := prox.rs.ChunkQueue.Peek()
-	return buf
+	return buf.buf, buf.tagtype,buf.msgLen, buf.time,buf.streamID
 }

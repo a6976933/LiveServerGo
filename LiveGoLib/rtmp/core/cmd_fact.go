@@ -1,11 +1,10 @@
 package core
 
 import (
-	"bufio"
 	"encoding/binary"
 	"fmt"
 	"os"
-
+	"io"
 	"LiveGoLib/amf"
 	"LiveGoLib/av"
 	"LiveGoLib/bitop"
@@ -74,7 +73,7 @@ func CmdFactory(clientInfo *ClientInfo) {
 		cmdContext.cmdType = cMsgAMF0
 		cmdContext.cmdType.Handle(clientInfo)
 	default:
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
+		//bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 }
 
@@ -139,26 +138,33 @@ func ParseSplitChunk(clientInfo *ClientInfo) ([]byte, error) {
 	}
 	clientInfo.MessageLength = clientInfo.MessageLength - clientInfo.chunksize
 	for {
-		ParseBasicHeader(clientInfo)
-		ParseMessageHeader(clientInfo)
+		err = ParseBasicHeader(clientInfo)
+		if err != nil {
+			fmt.Println(err)
+			return TempBuff, err
+		}
+		err = ParseMessageHeader(clientInfo)
+		if err != nil {
+			fmt.Println(err)
+			return TempBuff, err
+		}
 		if clientInfo.MessageLength < clientInfo.chunksize {
 			fmt.Println("end end end")
 			TempBuff2, err := clientInfo.rw.ReadNByte(int(clientInfo.MessageLength), clientInfo.Buff)
 			if err != nil {
 				return TempBuff, err
 			}
-			fmt.Println(TempBuff2)
 			TempBuff = append(TempBuff, TempBuff2...)
 			return TempBuff, nil
 		} else {
-			fmt.Println("continnue")
+			fmt.Println("continue")
 			TempBuff2, err := clientInfo.rw.ReadNByte(int(clientInfo.chunksize), clientInfo.Buff)
 			if err != nil {
-				fmt.Println("has err continue")
+				fmt.Println("has err ",err)
 				return TempBuff, err
 			}
 			clientInfo.MessageLength = clientInfo.MessageLength - clientInfo.chunksize
-			fmt.Println(TempBuff2)
+			//fmt.Println(TempBuff2)
 			TempBuff = append(TempBuff, TempBuff2...)
 		}
 	}
@@ -168,6 +174,7 @@ func ParseChunk(clientInfo *ClientInfo) ([]byte, error) {
 	var Buff []byte
 	var err error
 	fmt.Println("Message length:", clientInfo.MessageLength)
+	OrgMsgLen := clientInfo.MessageLength
 	if clientInfo.MessageLength > clientInfo.chunksize {
 		Buff, err = ParseSplitChunk(clientInfo)
 		if err != nil {
@@ -180,6 +187,7 @@ func ParseChunk(clientInfo *ClientInfo) ([]byte, error) {
 			return Buff, err
 		}
 	}
+	clientInfo.MessageLength = OrgMsgLen
 	return Buff, nil
 }
 
@@ -190,6 +198,7 @@ func (*CmdMessageAMF0) Handle(clientInfo *ClientInfo) {
 	clientInfo.Buff, err = ParseChunk(clientInfo)
 	if err != nil {
 		fmt.Println(err)
+		HandleDisConnErr(clientInfo, err)
 	}
 	amfCmdType, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
 	fmt.Println(amfCmdType)
@@ -330,6 +339,17 @@ func (cnt *ConnectAMF0) Handle(clientInfo *ClientInfo) {
 
 	cmdContext.wCmdType = conResp
 	cmdContext.wCmdType.Write(clientInfo)
+	clientInfo.media = SaveFLVHeader()
+}
+
+func SaveFLVHeader() *os.File {
+	fo ,err := os.Create("stv.flv")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fo.Write([]byte{0x46, 0x4C, 0x56, 0x01, 0x05, 0x00, 0x00, 0x00, 0x09})
+	fo.Write([]byte{0x00, 0x00, 0x00, 0x00})
+	return fo
 }
 
 func (rs *ReleaseStream) Handle(clientInfo *ClientInfo) {
@@ -394,16 +414,36 @@ func (vm *VideoMessage) Handle(clientInfo *ClientInfo) {
 	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 	if err != nil {
 		fmt.Println(err)
+		HandleDisConnErr(clientInfo, err)
 	}
-	clientInfo.prox.SetSendBytes(msgByte)
+	SaveFLVBody(clientInfo, msgByte, 9)
+	clientInfo.prox.SetSendInfo(msgByte,9,clientInfo.MessageLength,clientInfo.Timestamp,clientInfo.MessageStreamID)
+	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
 func (am *AudioMessage) Handle(clientInfo *ClientInfo) {
 	msgByte, err := ParseChunk(clientInfo)
 	if err != nil {
 		fmt.Println(err)
+		HandleDisConnErr(clientInfo, err)
 	}
-	clientInfo.prox.SetSendBytes(msgByte)
+	SaveFLVBody(clientInfo, msgByte, 8)
+	clientInfo.prox.SetSendInfo(msgByte,8,clientInfo.MessageLength,clientInfo.Timestamp,clientInfo.MessageStreamID)
+	//bufio.NewReader(os.Stdin).ReadBytes('\n')
+}
+
+func SaveFLVBody(clientInfo *ClientInfo,msgByte []byte, tagType uint){
+	var b = make([]byte, 1)
+	b[0] = byte(uint8(tagType))
+	clientInfo.media.Write(b)
+	clientInfo.media.Write(av.TransUINT32_2_3Byte(uint32(len(msgByte))))
+	clientInfo.media.Write(av.TransUINT32_2_3Byte(clientInfo.Timestamp))
+	b[0] = byte(0)
+	clientInfo.media.Write(b)
+	//clientInfo.media.Write(av.TransUINT32_2_3Byte(0))
+	clientInfo.media.Write(msgByte)
+	preTagSize := av.TransUINT32_2_4Byte(uint32(len(msgByte)+8))
+	clientInfo.media.Write(preTagSize)
 }
 
 /*
@@ -522,5 +562,12 @@ func (ost *OnStatus) Write(clientInfo *ClientInfo) {
 		fmt.Println(err)
 	} else {
 		fmt.Println("onStatus Send Success")
+	}
+}
+
+func HandleDisConnErr(clientInfo *ClientInfo, err error) {
+	if err == io.EOF {
+		clientInfo.media.Close()
+		clientInfo.disConn = true
 	}
 }

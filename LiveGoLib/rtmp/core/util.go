@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-
+	"os"
 	"LiveGoLib/av"
 	"LiveGoLib/proxy"
 )
@@ -41,6 +41,8 @@ type ClientInfo struct {
 	publishType    string
 	dataFrame      map[string]interface{}
 	videoFrameType uint32
+	media         *os.File
+	disConn       bool
 }
 
 type DataFrame struct {
@@ -176,6 +178,9 @@ func (brw *ByteReadWriter) Write(b []byte) (int, error) {
 	}
 	return n, nil
 }
+
+
+
 
 /*
 func (brw *ByteReadWriter) ReadFull() ([]byte, int, error) {
