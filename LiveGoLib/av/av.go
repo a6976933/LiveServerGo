@@ -99,8 +99,8 @@ func TransUINT32_2_4Byte(i uint32) []byte {
 	var b = make([]byte, 4)
 	b[0] = byte(uint8(i >> 24))
 	b[1] = byte(uint8((i >> 16) & 0xff))
-	b[1] = byte(uint8((i >> 8) & 0xff))
-	b[2] = byte(uint8(i & 0xff))
+	b[2] = byte(uint8((i >> 8) & 0xff))
+	b[3] = byte(uint8(i & 0xff))
 	return b
 }
 

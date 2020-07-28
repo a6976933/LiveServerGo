@@ -8,6 +8,7 @@ import (
 	"LiveGoLib/amf"
 	"LiveGoLib/av"
 	"LiveGoLib/bitop"
+	"bufio"
 )
 
 type CommandR interface {
@@ -73,7 +74,7 @@ func CmdFactory(clientInfo *ClientInfo) {
 		cmdContext.cmdType = cMsgAMF0
 		cmdContext.cmdType.Handle(clientInfo)
 	default:
-		//bufio.NewReader(os.Stdin).ReadBytes('\n')
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 }
 
@@ -138,10 +139,14 @@ func ParseSplitChunk(clientInfo *ClientInfo) ([]byte, error) {
 	}
 	clientInfo.MessageLength = clientInfo.MessageLength - clientInfo.chunksize
 	for {
+		var TempBuff2 []byte
 		err = ParseBasicHeader(clientInfo)
 		if err != nil {
 			fmt.Println(err)
 			return TempBuff, err
+		}
+		if clientInfo.Fmt != 3 {
+			bufio.NewReader(os.Stdin).ReadBytes('\n')
 		}
 		err = ParseMessageHeader(clientInfo)
 		if err != nil {
@@ -150,7 +155,7 @@ func ParseSplitChunk(clientInfo *ClientInfo) ([]byte, error) {
 		}
 		if clientInfo.MessageLength < clientInfo.chunksize {
 			fmt.Println("end end end")
-			TempBuff2, err := clientInfo.rw.ReadNByte(int(clientInfo.MessageLength), clientInfo.Buff)
+			TempBuff2, err = clientInfo.rw.ReadNByte(int(clientInfo.MessageLength), clientInfo.Buff)
 			if err != nil {
 				return TempBuff, err
 			}
@@ -158,7 +163,7 @@ func ParseSplitChunk(clientInfo *ClientInfo) ([]byte, error) {
 			return TempBuff, nil
 		} else {
 			fmt.Println("continue")
-			TempBuff2, err := clientInfo.rw.ReadNByte(int(clientInfo.chunksize), clientInfo.Buff)
+			TempBuff2, err = clientInfo.rw.ReadNByte(int(clientInfo.chunksize), clientInfo.Buff)
 			if err != nil {
 				fmt.Println("has err ",err)
 				return TempBuff, err
@@ -438,11 +443,11 @@ func SaveFLVBody(clientInfo *ClientInfo,msgByte []byte, tagType uint){
 	clientInfo.media.Write(b)
 	clientInfo.media.Write(av.TransUINT32_2_3Byte(uint32(len(msgByte))))
 	clientInfo.media.Write(av.TransUINT32_2_3Byte(clientInfo.Timestamp))
-	b[0] = byte(0)
+	b[0] = byte(uint8(0))
 	clientInfo.media.Write(b)
-	//clientInfo.media.Write(av.TransUINT32_2_3Byte(0))
+	clientInfo.media.Write(av.TransUINT32_2_3Byte(0))
 	clientInfo.media.Write(msgByte)
-	preTagSize := av.TransUINT32_2_4Byte(uint32(len(msgByte)+8))
+	preTagSize := av.TransUINT32_2_4Byte(uint32(len(msgByte)+11))
 	clientInfo.media.Write(preTagSize)
 }
 
