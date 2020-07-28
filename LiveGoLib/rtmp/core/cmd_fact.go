@@ -422,7 +422,7 @@ func (vm *VideoMessage) Handle(clientInfo *ClientInfo) {
 		HandleDisConnErr(clientInfo, err)
 	}
 	SaveFLVBody(clientInfo, msgByte, 9)
-	clientInfo.prox.SetSendInfo(msgByte,9,clientInfo.MessageLength,clientInfo.Timestamp,clientInfo.MessageStreamID)
+	clientInfo.prox.SetSendInfo(msgByte,9, uint32(len(msgByte)),clientInfo.Timestamp,clientInfo.MessageStreamID)
 	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
@@ -433,7 +433,7 @@ func (am *AudioMessage) Handle(clientInfo *ClientInfo) {
 		HandleDisConnErr(clientInfo, err)
 	}
 	SaveFLVBody(clientInfo, msgByte, 8)
-	clientInfo.prox.SetSendInfo(msgByte,8,clientInfo.MessageLength,clientInfo.Timestamp,clientInfo.MessageStreamID)
+	clientInfo.prox.SetSendInfo(msgByte,8, uint32(len(msgByte)),clientInfo.Timestamp,clientInfo.MessageStreamID)
 	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 

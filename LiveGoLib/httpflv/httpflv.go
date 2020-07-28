@@ -24,12 +24,14 @@ func (cli *ClientInfo) Handleflv(w http.ResponseWriter, r *http.Request) {
 		var time uint32
 		var streamID uint32*/
 		var tagInfo []byte
-		msgData, tagType, msgLen, time, streamID := cli.Prox.GetSendInfo()
+		//var b = make([]byte, 1)
+		//b[0] = byte(uint8(tagType))
+		msgData, tagType, msgLen, time, _ := cli.Prox.GetSendInfo()
 		tagInfo = append(tagInfo, byte(tagType))
 		tagInfo = append(tagInfo, av.TransUINT32_2_3Byte(msgLen)...)
 		tagInfo = append(tagInfo, av.TransUINT32_2_3Byte(time)...)
 		tagInfo = append(tagInfo, byte(0))
-		tagInfo = append(tagInfo, av.TransUINT32_2_3Byte(streamID)...)
+		tagInfo = append(tagInfo, av.TransUINT32_2_3Byte(0)...)
 		tagInfo = append(tagInfo, msgData...)
 		w.Write(tagInfo)
 		w.Write(av.TransUINT32_2_4Byte(uint32(msgLen+11)))
