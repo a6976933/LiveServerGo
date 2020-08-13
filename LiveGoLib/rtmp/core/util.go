@@ -139,19 +139,22 @@ func (brw *ByteReadWriter) ReadNByte(n int, b []byte) ([]byte, error) {
 	if err != nil {
 		return b, err
 	}
-	var count = 0
+	//var count = 0
+	fmt.Println("Now return buff size: ", len(b))
 	for haveRead < n {
 		others := make([]byte, n-haveRead)
 		d, err := brw.brw.Read(others)
 		if err != nil {
 			return b, err
 		}
-		haveRead += d
-		b = append(b, others...)
-		count++
-		if count > 10 {
-			break
+		fmt.Println("Now d : ", d," Now HaveRead : ", haveRead)
+		if d != 0 {
+			for i := 0;i < d; i++ {
+				b[haveRead] = others[i]
+				haveRead++
+			}
 		}
+		fmt.Println("Now return read again buff size : ", len(b))
 	}
 	fmt.Println(haveRead)
 	if haveRead != n {

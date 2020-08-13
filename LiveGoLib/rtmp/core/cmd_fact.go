@@ -137,6 +137,7 @@ func ParseSplitChunk(clientInfo *ClientInfo) ([]byte, error) {
 	if err != nil {
 		return TempBuff, err
 	}
+	fmt.Println(len(TempBuff))
 	clientInfo.MessageLength = clientInfo.MessageLength - clientInfo.chunksize
 	for {
 		var TempBuff2 []byte
@@ -153,13 +154,14 @@ func ParseSplitChunk(clientInfo *ClientInfo) ([]byte, error) {
 			fmt.Println(err)
 			return TempBuff, err
 		}
-		if clientInfo.MessageLength < clientInfo.chunksize {
+		if clientInfo.MessageLength <= clientInfo.chunksize {
 			fmt.Println("end end end")
 			TempBuff2, err = clientInfo.rw.ReadNByte(int(clientInfo.MessageLength), clientInfo.Buff)
 			if err != nil {
 				return TempBuff, err
 			}
 			TempBuff = append(TempBuff, TempBuff2...)
+			fmt.Println(len(TempBuff))
 			return TempBuff, nil
 		} else {
 			fmt.Println("continue")
