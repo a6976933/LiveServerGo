@@ -1,8 +1,20 @@
 package proxy
 
+import (
+	"sync"
+)
 type MiddleBuf interface {
 	SetSendInfo(buf []byte,tagtype int,msgLen uint32,time uint32,id uint32)
 	GetSendInfo() ([]byte, int,uint32, uint32, uint32)
+	SendMetaData() []byte
+	SetMetaData([]byte)
+	SetAVCData ([]byte)
+	GetAVCData () []byte
+	SetAACData ([]byte)
+	GetAACData () []byte
+	GetClientCnt () uint32
+	SetClientCnt (bool)
+	GetSChan  () chan struct{}
 }
 
 type FLVGetter struct {
@@ -10,12 +22,19 @@ type FLVGetter struct {
 }
 
 type RTMPSender struct {
-	ChunkQueue *Queue
+
 }
 
 type ProxyPush struct {
 	rs *RTMPSender
 	fg *FLVGetter
+	si SendInfo
+	sendChan chan struct{}
+	clientCnt  uint32
+	cCntm    sync.Mutex
+	metaData []byte
+	avcData  []byte
+	aacData  []byte
 }
 
 type SendInfo struct {
@@ -26,63 +45,10 @@ type SendInfo struct {
 	streamID uint32
 }
 
-type Queue struct {
-	buf  []SendInfo
-	cap  uint
-	head uint
-	tail uint
-}
-
-func (q *Queue) Enqueue(buff SendInfo) {
-	q.tail = (q.tail + 1) % q.cap
-	if q.head == q.tail {
-		q.buf[q.head] = buff
-		q.head = (q.head + 1) % q.cap
-	} else {
-		q.buf[q.tail] = buff
-	}
-}
-
-func (q *Queue) Peek() SendInfo {
-	return q.buf[q.head]
-}
-
-func NewProxyPush(cap uint) *ProxyPush {
+func NewProxyPush() *ProxyPush {
 	var ret = new(ProxyPush)
-	ret.rs = NewRTMPSender()
-	ret.fg = NewFLVGetter()
-	ret.rs.ChunkQueue.SetCap(cap)
+	ret.sendChan = make(chan struct{})
 	return ret
-}
-
-func NewRTMPSender() *RTMPSender {
-	ret := &RTMPSender{
-		ChunkQueue: NewQueue(),
-	}
-	return ret
-}
-
-func NewFLVGetter() *FLVGetter {
-	return new(FLVGetter)
-}
-
-func NewQueue() *Queue {
-	return new(Queue)
-}
-
-func (q *Queue) SetCap(cp uint) {
-	q.cap = cp
-	for i := 0; i < int(cp); i++ {
-		q.buf = make([]SendInfo, 10)
-	}
-}
-
-func (fg *FLVGetter) GetSendBytes(buf []byte) []byte {
-	return buf
-}
-
-func (rs *RTMPSender) SetSendInfo(ob SendInfo) {
-	rs.ChunkQueue.Enqueue(ob)
 }
 
 func (prox *ProxyPush) SetSendInfo(buf []byte,tagtype int,msgLen uint32,time uint32,streamID uint32) {
@@ -92,10 +58,54 @@ func (prox *ProxyPush) SetSendInfo(buf []byte,tagtype int,msgLen uint32,time uin
 	ob.msgLen = msgLen
 	ob.time = time
 	ob.streamID = streamID
-	prox.rs.SetSendInfo(ob)
+	prox.si = ob
 }
 
 func (prox *ProxyPush) GetSendInfo() ([]byte,int,uint32,uint32,uint32) {
-	buf := prox.rs.ChunkQueue.Peek()
+	buf := prox.si
 	return buf.buf, buf.tagtype,buf.msgLen, buf.time,buf.streamID
+}
+
+func (prox *ProxyPush) SetMetaData(meta []byte){
+	prox.metaData = meta
+}
+
+func (prox *ProxyPush) SendMetaData() []byte {
+	return prox.metaData
+}
+
+func (prox *ProxyPush) SetAVCData(data []byte) {
+	prox.avcData = data
+}
+
+func (prox *ProxyPush) GetAVCData () []byte {
+	return prox.avcData
+}
+
+func (prox *ProxyPush) SetAACData(data []byte) {
+	prox.aacData = data
+}
+
+func (prox *ProxyPush) GetAACData () []byte {
+	return prox.aacData
+}
+
+func (prox *ProxyPush) GetClientCnt () uint32 {
+	return prox.clientCnt
+}
+
+func (prox *ProxyPush) SetClientCnt(op bool) {
+	if op {
+		prox.cCntm.Lock()
+		prox.clientCnt++
+		prox.cCntm.Unlock()
+	} else {
+		prox.cCntm.Lock()
+		prox.clientCnt--
+		prox.cCntm.Unlock()
+	}
+}
+
+func (prox *ProxyPush) GetSChan  () chan struct{} {
+	return prox.sendChan
 }

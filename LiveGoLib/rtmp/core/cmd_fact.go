@@ -408,6 +408,8 @@ func (pb *Publish) Handle(clientInfo *ClientInfo) {
 
 func (sdf *SetDataFrame) Handle(clientInfo *ClientInfo) {
 	var onMeta string
+	clientInfo.onMetadata = clientInfo.Buff[:clientInfo.MessageLength-16]
+	clientInfo.prox.SetMetaData(clientInfo.onMetadata)
 	onMeta, clientInfo.Buff = amf.Decode_String(clientInfo.Buff, true)
 	fmt.Println(onMeta)
 	var obj map[string]interface{}
@@ -423,8 +425,18 @@ func (vm *VideoMessage) Handle(clientInfo *ClientInfo) {
 		fmt.Println(err)
 		HandleDisConnErr(clientInfo, err)
 	}
+	if !clientInfo.avcSpec {
+		clientInfo.avcSpec = true
+		clientInfo.prox.SetAVCData(msgByte)
+	}
+	cCnt := int(clientInfo.prox.GetClientCnt())
+	chn := clientInfo.prox.GetSChan()
+	fmt.Println(cCnt)
 	SaveFLVBody(clientInfo, msgByte, 9)
 	clientInfo.prox.SetSendInfo(msgByte,9, uint32(len(msgByte)),clientInfo.Timestamp,clientInfo.MessageStreamID)
+	for i := 0;i < cCnt; i++{
+		chn <- struct{}{}
+	}
 	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
@@ -434,8 +446,18 @@ func (am *AudioMessage) Handle(clientInfo *ClientInfo) {
 		fmt.Println(err)
 		HandleDisConnErr(clientInfo, err)
 	}
+	if !clientInfo.aacSpec {
+		clientInfo.aacSpec = true
+		clientInfo.prox.SetAACData(msgByte)
+	}
+	cCnt := int(clientInfo.prox.GetClientCnt())
+	chn := clientInfo.prox.GetSChan()
+	fmt.Println(cCnt)
 	SaveFLVBody(clientInfo, msgByte, 8)
 	clientInfo.prox.SetSendInfo(msgByte,8, uint32(len(msgByte)),clientInfo.Timestamp,clientInfo.MessageStreamID)
+	for i := 0;i < cCnt; i++{
+		chn <- struct{}{}
+	}
 	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 

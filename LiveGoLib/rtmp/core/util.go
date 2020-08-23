@@ -29,6 +29,9 @@ type ClientInfo struct {
 	ChunkHeader
 	DataFrame
 	AVCType
+	onMetadata     []byte
+	avcSpec        bool
+	aacSpec        bool
 	prox           proxy.MiddleBuf
 	Conn           net.Conn
 	Buff           []byte
