@@ -3,7 +3,6 @@ package core
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"os"
@@ -143,25 +142,25 @@ func (brw *ByteReadWriter) ReadNByte(n int, b []byte) ([]byte, error) {
 		return b, err
 	}
 	//var count = 0
-	fmt.Println("Now return buff size: ", len(b))
+	//fmt.Println("Now return buff size: ", len(b))
 	for haveRead < n {
 		others := make([]byte, n-haveRead)
 		d, err := brw.brw.Read(others)
 		if err != nil {
 			return b, err
 		}
-		fmt.Println("Now d : ", d," Now HaveRead : ", haveRead)
+		//fmt.Println("Now d : ", d," Now HaveRead : ", haveRead)
 		if d != 0 {
 			for i := 0;i < d; i++ {
 				b[haveRead] = others[i]
 				haveRead++
 			}
 		}
-		fmt.Println("Now return read again buff size : ", len(b))
+		//fmt.Println("Now return read again buff size : ", len(b))
 	}
-	fmt.Println(haveRead)
+	//fmt.Println(haveRead)
 	if haveRead != n {
-		fmt.Println("Read over Buffer", haveRead, "bytes")
+		//fmt.Println("Read over Buffer", haveRead, "bytes")
 		return b, errors.New("Read over Buffer" + string(haveRead) + "bytes")
 	}
 	return b, nil

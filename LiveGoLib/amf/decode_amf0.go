@@ -30,7 +30,7 @@ func Decode_AMF0(Buff []byte) (interface{}, []byte) {
 	case 8:
 		ret, Buff = Decode_ECMAArray(Buff)
 	}
-	fmt.Println(ret)
+	//fmt.Println(ret)
 	/*	if ret == "connect" {
 		TransactionID, Buff := Decode_Number(Buff, true)
 		fmt.Println("Trans ID: ", TransactionID)
@@ -82,7 +82,7 @@ func Decode_Object(Buff []byte, clear1byte bool) (av.Object, []byte) {
 				break
 			}
 		}
-		fmt.Println(key)
+		//fmt.Println(key)
 		val, Buf := Decode_AMF0(Buf)
 		obj[key] = val
 		Buff = Buf

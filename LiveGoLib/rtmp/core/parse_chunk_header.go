@@ -39,9 +39,9 @@ func ParseBasicHeader(clientInfo *ClientInfo) error {
 		return err
 	}
 	clientInfo.Fmt = bitop.RESERVED_8(clientInfo.Buff[0], 0, 2) // Parse FMT
-	fmt.Println("Now fmt: ", clientInfo.Fmt)
+	//fmt.Println("Now fmt: ", clientInfo.Fmt)
 	clientInfo.Csid = uint32(bitop.RESERVED_8(clientInfo.Buff[0], 2, 8))
-	fmt.Println("Now csid: ", clientInfo.Csid)
+	//fmt.Println("Now csid: ", clientInfo.Csid)
 	switch clientInfo.Csid {
 	case 0:
 		clientInfo.Buff, err = clientInfo.rw.ReadNByte(1, clientInfo.Buff)
@@ -63,8 +63,8 @@ func ParseBasicHeader(clientInfo *ClientInfo) error {
 	default:
 		//msgHeaderStartPoint = 1
 	}
-	fmt.Println(clientInfo.Buff)
-	fmt.Println(clientInfo.ChunkBasicHeader)
+	//fmt.Println(clientInfo.Buff)
+	//fmt.Println(clientInfo.ChunkBasicHeader)
 	return nil
 }
 
@@ -103,8 +103,8 @@ func ParseMessageHeader(clientInfo *ClientInfo) error {
 	case 3:
 		//timeExtendStartPoint = msgHeaderStartPoint
 	}
-	fmt.Println(clientInfo.Buff)
-	fmt.Println(clientInfo.ChunkMessageHeader)
+	//fmt.Println(clientInfo.Buff)
+	//fmt.Println(clientInfo.ChunkMessageHeader)
 	return nil
 }
 

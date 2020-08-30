@@ -41,6 +41,8 @@ type ConnectRespAMF0 struct{}
 
 type ReleaseStream struct{}
 type FCPublish struct{}
+type FCUnPublish struct{}
+type DeleteStream struct{}
 type CreateStream struct{}
 
 type Publish struct{}
@@ -137,7 +139,7 @@ func ParseSplitChunk(clientInfo *ClientInfo) ([]byte, error) {
 	if err != nil {
 		return TempBuff, err
 	}
-	fmt.Println(len(TempBuff))
+	//fmt.Println(len(TempBuff))
 	clientInfo.MessageLength = clientInfo.MessageLength - clientInfo.chunksize
 	for {
 		var TempBuff2 []byte
@@ -155,16 +157,16 @@ func ParseSplitChunk(clientInfo *ClientInfo) ([]byte, error) {
 			return TempBuff, err
 		}
 		if clientInfo.MessageLength <= clientInfo.chunksize {
-			fmt.Println("end end end")
+			//fmt.Println("end end end")
 			TempBuff2, err = clientInfo.rw.ReadNByte(int(clientInfo.MessageLength), clientInfo.Buff)
 			if err != nil {
 				return TempBuff, err
 			}
 			TempBuff = append(TempBuff, TempBuff2...)
-			fmt.Println(len(TempBuff))
+			//fmt.Println(len(TempBuff))
 			return TempBuff, nil
 		} else {
-			fmt.Println("continue")
+			//fmt.Println("continue")
 			TempBuff2, err = clientInfo.rw.ReadNByte(int(clientInfo.chunksize), clientInfo.Buff)
 			if err != nil {
 				fmt.Println("has err ",err)
@@ -180,7 +182,7 @@ func ParseSplitChunk(clientInfo *ClientInfo) ([]byte, error) {
 func ParseChunk(clientInfo *ClientInfo) ([]byte, error) {
 	var Buff []byte
 	var err error
-	fmt.Println("Message length:", clientInfo.MessageLength)
+	//fmt.Println("Message length:", clientInfo.MessageLength)
 	OrgMsgLen := clientInfo.MessageLength
 	if clientInfo.MessageLength > clientInfo.chunksize {
 		Buff, err = ParseSplitChunk(clientInfo)
@@ -208,7 +210,7 @@ func (*CmdMessageAMF0) Handle(clientInfo *ClientInfo) {
 		HandleDisConnErr(clientInfo, err)
 	}
 	amfCmdType, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
-	fmt.Println(amfCmdType)
+	//fmt.Println(amfCmdType)
 	switch amfCmdType {
 	case "connect":
 		var cnt *ConnectAMF0
@@ -248,6 +250,10 @@ func (*CmdMessageAMF0) Handle(clientInfo *ClientInfo) {
 		var sdf *SetDataFrame
 		cmdContext.cmdType = sdf
 		cmdContext.cmdType.Handle(clientInfo)
+	case "FCUnpublish":
+
+	case "deleteStream":
+		fmt.Println("client deleteStream")
 	}
 }
 
@@ -321,11 +327,10 @@ func (spb *SetPeerBandwidth) Write(clientInfo *ClientInfo) {
 }
 
 func (cnt *ConnectAMF0) Handle(clientInfo *ClientInfo) {
-	var TransactionID float64
 	clientInfo.transactionID, clientInfo.Buff = amf.Decode_Number(clientInfo.Buff, true)
-	fmt.Println("Trans ID: ", TransactionID)
+	//fmt.Println("Trans ID: ", TransactionID)
 	clientInfo.obj, _ = amf.Decode_Object(clientInfo.Buff, true)
-	fmt.Println(clientInfo.obj)
+	//fmt.Println(clientInfo.obj)
 	clientInfo.windowAckSize = 2500000
 	var cmdContext CommandContext
 	var windowSent *WindowAcknowledgementSize
@@ -360,35 +365,34 @@ func SaveFLVHeader() *os.File {
 }
 
 func (rs *ReleaseStream) Handle(clientInfo *ClientInfo) {
-	var TransactionID float64
 	clientInfo.transactionID, clientInfo.Buff = amf.Decode_Number(clientInfo.Buff, true)
-	fmt.Println("Trans ID: ", TransactionID)
-	var NullType interface{}
-	NullType, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
-	fmt.Println(NullType)
-	var RlsStreamStr interface{}
-	RlsStreamStr, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
-	fmt.Println(RlsStreamStr)
+	//fmt.Println("Trans ID: ", TransactionID)
+//	var NullType interface{}
+	_, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
+	//fmt.Println(NullType)
+	//var RlsStreamStr interface{}
+	_, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
+	//fmt.Println(RlsStreamStr)
 }
 
 func (fcp *FCPublish) Handle(clientInfo *ClientInfo) {
 	clientInfo.transactionID, clientInfo.Buff = amf.Decode_Number(clientInfo.Buff, true)
-	fmt.Println("Trans ID: ", clientInfo.transactionID)
-	var NullType interface{}
-	NullType, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
-	fmt.Println(NullType)
-	var FcpStr interface{}
-	FcpStr, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
-	fmt.Println(FcpStr)
+	//fmt.Println("Trans ID: ", clientInfo.transactionID)
+	//var NullType interface{}
+	_, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
+	//fmt.Println(NullType)
+	//var FcpStr interface{}
+	_, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
+	//fmt.Println(FcpStr)
 }
 
 func (cs *CreateStream) Handle(clientInfo *ClientInfo) {
-	fmt.Println("prvent trans ID: ", clientInfo.transactionID)
+	//fmt.Println("prvent trans ID: ", clientInfo.transactionID)
 	clientInfo.transactionID, clientInfo.Buff = amf.Decode_Number(clientInfo.Buff, true)
-	fmt.Println("Trans ID: ", clientInfo.transactionID)
+	//fmt.Println("Trans ID: ", clientInfo.transactionID)
 	var obj interface{}
 	obj, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
-	fmt.Println(obj)
+	//fmt.Println(obj)
 	if obj == nil {
 		return
 	}
@@ -396,25 +400,25 @@ func (cs *CreateStream) Handle(clientInfo *ClientInfo) {
 
 func (pb *Publish) Handle(clientInfo *ClientInfo) {
 	clientInfo.transactionID, clientInfo.Buff = amf.Decode_Number(clientInfo.Buff, true)
-	fmt.Println("Trans ID: ", clientInfo.transactionID)
-	var obj interface{}
-	obj, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
-	fmt.Println(obj)
+	//fmt.Println("Trans ID: ", clientInfo.transactionID)
+	//var obj interface{}
+	_, clientInfo.Buff = amf.Decode_AMF0(clientInfo.Buff)
+	//fmt.Println(obj)
 	clientInfo.publishName, clientInfo.Buff = amf.Decode_String(clientInfo.Buff, true)
 	clientInfo.publishType, clientInfo.Buff = amf.Decode_String(clientInfo.Buff, true)
-	fmt.Println("Publish Name: ", clientInfo.publishName)
-	fmt.Println("Publish Type: ", clientInfo.publishType)
+	//fmt.Println("Publish Name: ", clientInfo.publishName)
+	//fmt.Println("Publish Type: ", clientInfo.publishType)
 }
 
 func (sdf *SetDataFrame) Handle(clientInfo *ClientInfo) {
-	var onMeta string
+	//var onMeta string
 	clientInfo.onMetadata = clientInfo.Buff[:clientInfo.MessageLength-16]
 	clientInfo.prox.SetMetaData(clientInfo.onMetadata)
-	onMeta, clientInfo.Buff = amf.Decode_String(clientInfo.Buff, true)
-	fmt.Println(onMeta)
+	_, clientInfo.Buff = amf.Decode_String(clientInfo.Buff, true)
+	//fmt.Println(onMeta)
 	var obj map[string]interface{}
 	obj, clientInfo.Buff = amf.Decode_ECMAArray(clientInfo.Buff)
-	fmt.Println(obj)
+	//fmt.Println(obj)
 	clientInfo.dataFrame = obj
 }
 
@@ -431,12 +435,14 @@ func (vm *VideoMessage) Handle(clientInfo *ClientInfo) {
 	}
 	cCnt := int(clientInfo.prox.GetClientCnt())
 	chn := clientInfo.prox.GetSChan()
-	fmt.Println(cCnt)
-	SaveFLVBody(clientInfo, msgByte, 9)
+	//fmt.Println(cCnt)
 	clientInfo.prox.SetSendInfo(msgByte,9, uint32(len(msgByte)),clientInfo.Timestamp,clientInfo.MessageStreamID)
-	for i := 0;i < cCnt; i++{
-		chn <- struct{}{}
-	}
+  go func(){
+		for i := 0;i < cCnt; i++{
+			chn <- struct{}{}
+		}
+	}()
+	SaveFLVBody(clientInfo, msgByte, 9)
 	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
@@ -452,12 +458,15 @@ func (am *AudioMessage) Handle(clientInfo *ClientInfo) {
 	}
 	cCnt := int(clientInfo.prox.GetClientCnt())
 	chn := clientInfo.prox.GetSChan()
-	fmt.Println(cCnt)
-	SaveFLVBody(clientInfo, msgByte, 8)
+	//fmt.Println(cCnt)
+
 	clientInfo.prox.SetSendInfo(msgByte,8, uint32(len(msgByte)),clientInfo.Timestamp,clientInfo.MessageStreamID)
-	for i := 0;i < cCnt; i++{
-		chn <- struct{}{}
-	}
+	go func(){
+		for i := 0;i < cCnt; i++{
+			chn <- struct{}{}
+		}
+	}()
+	SaveFLVBody(clientInfo, msgByte, 8)
 	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
@@ -498,7 +507,7 @@ func (cra *ConnectRespAMF0) Write(clientInfo *ClientInfo) {
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Println("Conn Resp Success")
+		//fmt.Println("Conn Resp Success")
 	}
 }
 
@@ -521,7 +530,7 @@ func (ost *OnStatus) Write(clientInfo *ClientInfo) {
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Println("onStatus Send Success")
+		//fmt.Println("onStatus Send Success")
 	}
 }
 
